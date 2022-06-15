@@ -35,8 +35,8 @@ class _UploadState extends State<Upload> {
             Container(
               color: Colors.green,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: GestureDetector(
-                onTap: () => selectImage(context),
+              child: InkWell(
+                onTap: () => showOptionsDialog(context),
                 child: const Text(
                   "Select Image",
                   style: TextStyle(color: Colors.white),
@@ -53,6 +53,7 @@ class _UploadState extends State<Upload> {
               ),
             ),
             Preview(path: fileSelected?.path),
+            const SizedBox(height: 10),
             Container(
               color: !uploadInprogress
                   ? const Color.fromARGB(255, 250, 146, 34)
@@ -74,12 +75,43 @@ class _UploadState extends State<Upload> {
     );
   }
 
-  selectImage(context) async {
-    var photoPermissionGrant = await requestPermissions(Permission.photos);
+  Future<void> showOptionsDialog(BuildContext context) {
+    return showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Select Image Source'),
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: [
+                  InkWell(
+                    child: const Text('Take image from Camera'),
+                    onTap: () => selectImage(context, ImageSource.camera),
+                  ),
+                  const Padding(padding: EdgeInsets.all(10)),
+                  InkWell(
+                    child: const Text('Take image from Gallery'),
+                    onTap: () => selectImage(context, ImageSource.gallery),
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+  }
+
+  selectImage(context, ImageSource imageSource) async {
+    Navigator.of(context).pop();
+
+    var permission = imageSource == ImageSource.gallery
+        ? Permission.photos
+        : Permission.camera;
+
+    var photoPermissionGrant = await requestPermissions(permission);
     if (photoPermissionGrant) {
       try {
         XFile? pickedFile = await ImagePicker().pickImage(
-          source: ImageSource.gallery,
+          source: imageSource,
           imageQuality: quality,
         );
         if (pickedFile != null) {
